@@ -28,19 +28,19 @@
 
 ## 设备级配置
 
-在设备「配置」页设置（详见 [[Quick-Start|快速上手]]）：
+在设备「配置」页设置（详见 [快速上手](Quick-Start)）：
 
 - 主站 IP / 端口
 - 帧格式：Modbus TCP（MBAP）/ Modbus RTU over TCP（CRC16）
 - 自动重连开关与重连间隔（1–300 秒）
-- 注册包与心跳配置（见 [[Registration-and-Heartbeat|注册包与心跳]]）
+- 注册包与心跳配置（见 [注册包与心跳](Registration-and-Heartbeat)）
 
 ## 从站配置
 
 在「从站管理」页：
 
 - **添加 / 编辑 / 删除**从站，同一设备内从站 ID 必须唯一
-- 每个从站独立配置 **Unit ID** 与四类内存区（见 [[Register-Configuration|寄存器配置]]）
+- 每个从站独立配置 **Unit ID** 与四类内存区（见 [寄存器配置](Register-Configuration)）
 - 从站编辑与寄存器编辑使用**独立子窗口**，可同时打开多个互不干扰
 
 ## 多窗口编辑

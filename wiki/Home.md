@@ -21,16 +21,16 @@
 
 | 页面 | 内容 |
 |---|---|
-| [[Installation|安装指南]] | 下载安装包、便携版说明、WebView2 依赖 |
-| [[Quick-Start|快速上手]] | 五分钟跑通：创建设备 → 配置主站 → 启动 → 监控 |
-| [[Device-and-Slave-Management|设备与从站管理]] | 设备生命周期、从站配置、Unit ID 路由 |
-| [[Register-Configuration|寄存器配置]] | 四类内存区、数据类型、批量导入、地址空间预留 |
-| [[Registration-and-Heartbeat|注册包与心跳]] | 半双工长连接模型、报文数据类型、心跳间隔 |
-| [[Random-Simulation|随机模拟]] | 取值范围、刷新间隔、运行中热重载 |
-| [[Runtime-Monitor|运行监控]] | 实时值查看、运行值修改、通信日志 |
-| [[Import-and-Export|导入与导出]] | 寄存器批量导入、设备整树备份与冲突策略 |
-| [[Device-Bundle-Format|设备包格式]] | device_bundle v2.0 完整格式规范 |
-| [[FAQ|常见问题]] | 连接排查、高地址读取、WebView2 等常见问题 |
+| [安装指南](Installation) | 下载安装包、便携版说明、WebView2 依赖 |
+| [快速上手](Quick-Start) | 五分钟跑通：创建设备 → 配置主站 → 启动 → 监控 |
+| [设备与从站管理](Device-and-Slave-Management) | 设备生命周期、从站配置、Unit ID 路由 |
+| [寄存器配置](Register-Configuration) | 四类内存区、数据类型、批量导入、地址空间预留 |
+| [注册包与心跳](Registration-and-Heartbeat) | 半双工长连接模型、报文数据类型、心跳间隔 |
+| [随机模拟](Random-Simulation) | 取值范围、刷新间隔、运行中热重载 |
+| [运行监控](Runtime-Monitor) | 实时值查看、运行值修改、通信日志 |
+| [导入与导出](Import-and-Export) | 寄存器批量导入、设备整树备份与冲突策略 |
+| [设备包格式](Device-Bundle-Format) | device_bundle v2.0 完整格式规范 |
+| [常见问题](FAQ) | 连接排查、高地址读取、WebView2 等常见问题 |
 
 ## 快速链接
 
