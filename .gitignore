@@ -1,0 +1,23 @@
+# 发布仓库只提交文档与截图，安装包一律走 GitHub Release 附件
+dist/
+*.exe
+*.msi
+*.dmg
+*.deb
+*.rpm
+*.AppImage
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 临时文件
+*.tmp
+*.temp
+tmp*/
