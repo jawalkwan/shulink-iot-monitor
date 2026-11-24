@@ -1,51 +1,82 @@
+<div align="center">
+
 # Shulink-Iot-Monitor (SIM) · 枢灵 Iot 模拟器
 
-**Shulink-Iot-Monitor** 是一款 Windows 桌面应用，用于模拟 MODBUS Slave（服务端）设备，为上位机 / 监控平台的联调与测试提供可靠的数据源。基于 Tauri 构建，原生性能，安装包体积小。
+**一款 Windows 桌面 Modbus 从站模拟器 —— 模拟 DTU 设备主动接入主站平台，为物联网监控平台、SCADA 系统的上位联调提供可靠数据源。**
 
-> A Windows desktop application for simulating MODBUS TCP Slave (server) devices — built for testing SCADA / IoT platforms without real hardware.
+*A Windows desktop Modbus slave simulator that emulates DTU devices dialing into a master platform — built for testing IoT / SCADA systems without real hardware.*
 
 [![Latest Release](https://img.shields.io/github/v/release/jawalkwan/shulink-iot-monitor?label=%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC)](https://github.com/jawalkwan/shulink-iot-monitor/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-Windows%20x64-blue)](https://github.com/jawalkwan/shulink-iot-monitor/releases/latest)
-[![License](https://img.shields.io/badge/license-MIT-green)](#license)
+[![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-24C8DB)](https://tauri.app)
 
-## 截图
+</div>
 
-<!-- 截图就绪后替换下面的占位；图片放 screenshots/ 目录，用相对路径引用 -->
-| 主界面 | 寄存器监控 |
-|:---:|:---:|
-| ![主界面](screenshots/main.png) | ![寄存器监控](screenshots/registers.png) |
+---
+
+## 目录
+
+- [项目简介](#项目简介)
+- [功能特性](#功能特性)
+- [下载安装](#下载安装)
+- [快速开始](#快速开始)
+- [工作原理](#工作原理)
+- [数据文件](#数据文件)
+- [文档（Wiki）](#文档wiki)
+- [常见问题](#常见问题-faq)
+- [更新日志](#更新日志)
+- [问题反馈](#问题反馈)
+- [版权说明](#版权说明)
+
+## 项目简介
+
+在开发物联网监控平台或 SCADA 系统时，往往还没有真实的传感器 / DTU 硬件可用于联调。
+**Shulink-Iot-Monitor** 在一台 Windows 电脑上就能批量模拟出整批从站设备：注册、心跳、寄存器读写、随机数据变化全部真实呈现，让上位平台的开发与测试不再依赖硬件。
+
+技术栈：**Rust + Tauri 2 + Vue 3 + Element Plus**，原生性能，安装包体积小。
 
 ## 功能特性
 
-### MODBUS TCP 从站模拟
+### 设备 · 从站 · 寄存器三级模型
 
-- 完整支持标准功能码：`0x01` `0x02` `0x03` `0x04` `0x05` `0x06` `0x0F` `0x10`
-- 可配置监听 IP / 端口（默认 `0.0.0.0:502`）与 Unit ID（1–247）
-- 支持多客户端并发连接
+- 管理多台**设备（Device）**，每台设备下可挂载多个**从站（Slave）**，每个从站独立配置 Modbus 从机地址（Unit ID，1–247），请求按 Unit ID 精确路由
+- 每个从站独立维护四类内存区：**线圈 (0x) / 离散输入 (1x) / 输入寄存器 (3x) / 保持寄存器 (4x)**，每区最多 10,000 个地址
+- 寄存器条目可配置**名称、初值、数据类型**（`bool` / `uint16` / `int16` / `uint32` / `int32` / `float32`）、**单位与描述**，支持 JSON 批量导入与模板下载
+- 支持**预留地址空间**扩容：主站固定轮询 0–99 这类场景下，避免读到未用地址时返回 `IllegalDataAddress` 异常
 
-### 四类内存区
+### DTU 接入模式
 
-| 内存区 | 读写 | 说明 |
-|---|---|---|
-| 线圈 Coils (0x) | 读/写 | 位寄存器 |
-| 离散输入 Discrete Inputs (1x) | 只读 | 位寄存器 |
-| 输入寄存器 Input Registers (3x) | 只读 | 16 位寄存器 |
-| 保持寄存器 Holding Registers (4x) | 读/写 | 16 位寄存器 |
-
-每个内存区最多支持 10,000 个地址，界面实时监控并可直接编辑寄存器值（DEC / HEX 切换）。
+- 设备作为 TCP **客户端主动拨号**连接主站平台（可配置主站 IP / 端口），复现真实 DTU 的接入行为
+- 支持 **Modbus TCP（MBAP 封装）** 与 **Modbus RTU over TCP（带 CRC16 校验）** 两种帧格式
+- 断线**自动重连**，重连间隔可配置（1–300 秒）
 
 ### 注册包与心跳
 
-- 自定义注册包内容（HEX 字符串），支持 `{device_id}`、`{timestamp}` 等变量替换
-- 可配置心跳间隔（1–300 秒），注册与心跳走独立 TCP 连接
-- 支持手动"立即发送注册包"
-- 实时通信日志，收发报文一目了然
+- 注册包与心跳报文在**同一条 TCP 长连接**上收发（半双工长连接模型），与真实 DTU 行为一致
+- 连接成功后可自动发送注册包（`send_on_startup`），心跳间隔可配置（1–300 秒）
+- 报文内容支持 8 种数据类型：`Hex` / `String` / `Int8` / `Int16` / `Int32` / `Uint8` / `Uint16` / `Uint32`
 
-### 其他
+### 随机数据模拟
 
-- 配置导入 / 导出（TOML 格式），设备配置打包导入 / 导出
-- 深色 / 浅色主题切换
-- 中文界面，自适应系统字体
+- 可对任意寄存器配置**随机模拟**：设定取值范围（min / max）与刷新间隔，自动周期写入新值
+- 设备运行中修改模拟配置支持**热重载**，立即生效，无需重启
+
+### 运行监控与通信日志
+
+- 实时监控各从站四类内存区的当前值，支持在线修改运行值（模拟主站写入）
+- 每台设备独立的通信日志缓冲（500 条环形缓冲）：Modbus 请求 / 响应、注册包、心跳收发报文，同时提供 **HEX 与 ASCII** 双视图
+
+### 导入 / 导出
+
+- **寄存器批量导入**：上传 JSON 文件批量导入寄存器，支持下载导入模板、导入前预览
+- **设备整树备份**（`device_bundle v2.0`）：设备 → 从站 → 寄存器整树导出为 JSON，导入前**只读预检**，支持三种冲突策略（覆盖 / 跳过 / 副本），可跨机器迁移、跨用户交接
+- 格式细节见 [Wiki · 设备包格式](https://github.com/jawalkwan/shulink-iot-monitor/wiki/Device-Bundle-Format)
+
+### 界面
+
+- 中文 / English / 日本語 三语言界面，一键切换
+- 浅色 / 深色主题，宽松 / 紧凑两档排版密度
+- 无边框自绘标题栏，从站编辑、寄存器编辑使用独立子窗口
 
 ## 下载安装
 
@@ -60,84 +91,107 @@
 
 ## 快速开始
 
-1. **启动应用**：运行安装好的程序
-2. **配置服务端**：进入「配置」页，设置监听 IP（默认 `0.0.0.0`）、端口（默认 `502`）与 Unit ID
-3. **启动服务**：点击工具栏绿色「启动」按钮，状态指示灯变绿即表示服务已运行
-4. **监控寄存器**：进入「寄存器」页，选择内存区查看实时值，可直接编辑
-5. **注册 / 心跳**（可选）：进入「Reg/HB」页，配置目标服务器 IP / 端口与报文内容，开启自动心跳
+1. **创建设备**：启动应用，在「设备列表」新建一台设备
+2. **配置主站连接**：进入设备「配置」页，填写主站 IP / 端口、帧格式（Modbus TCP / RTU over TCP）、自动重连；按需配置注册包与心跳
+3. **添加从站与寄存器**：在「从站管理」页添加从站（Unit ID 1–247），为其配置寄存器名称、初值、数据类型
+4. **启动设备**：设备主动连接主站，状态变为「已连接」
+5. **监控寄存器**：进入「运行监控」查看实时值、修改运行值、开启随机模拟、查看通信日志
 
-### 用上位机工具验证
+### 用 Python 脚本验证（模拟主站平台）
 
-任意 MODBUS Master 工具均可连接测试，例如 Python + pymodbus：
+设备会主动拨号接入主站，因此在主站侧监听即可收发 Modbus 报文。下面用 20 行 Python 模拟一个最简主站平台：
 
 ```python
-from pymodbus.client import ModbusTcpClient
+import socket
 
-client = ModbusTcpClient('127.0.0.1', port=502)
-client.connect()
+# 1. 在 9000 端口监听，等待设备（DTU）拨号接入
+srv = socket.socket()
+srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+srv.bind(("0.0.0.0", 9000))
+srv.listen(1)
+print("等待设备接入 ...")
+conn, addr = srv.accept()
+print("设备已接入:", addr)
 
-# 读保持寄存器 0-9（Unit ID = 1）
-result = client.read_holding_registers(0, 10, slave=1)
-print(result.registers)
-
-client.close()
+# 2. 向从站 1 读取保持寄存器 0-9（FC 0x03，Modbus TCP 帧）
+conn.send(bytes.fromhex("00010000000601030000000A"))
+resp = conn.recv(1024)
+print("响应 HEX:", resp.hex().upper())
 ```
 
-GUI 工具推荐 [QModMaster](https://sourceforge.net/projects/qmodmaster/)：连接 `localhost:502`，Unit ID 与配置保持一致即可读写。
+在应用中把主站地址配置为 `127.0.0.1:9000`，帧格式选 `Modbus TCP`，启动设备即可看到完整收发报文。
 
-## 配置文件
+## 工作原理
 
-应用配置保存为 TOML 格式，可导出备份或跨机器迁移：
-
-```toml
-[modbus_server]
-listen_ip = "0.0.0.0"
-listen_port = 502
-unit_id = 1
-max_connections = 50
-coil_count = 1000
-discrete_input_count = 1000
-input_register_count = 1000
-holding_register_count = 1000
-
-[registration]
-target_ip = "127.0.0.1"
-target_port = 9000
-packet_hex = "01000000000601030000000A"
-send_on_startup = false
-use_variables = false
-device_id = "DEVICE001"
-
-[heartbeat]
-target_ip = "127.0.0.1"
-target_port = 9000
-packet_hex = "010000000006010300000001"
-interval_seconds = 30
-enabled = false
+```
+┌─────────────────────────────┐          TCP 长连接（注册 / 心跳 / Modbus 共用）
+│  Shulink-Iot-Monitor (DTU)  │ ────────────────────────────────────►  主站平台 / SCADA
+│                             │                                              │
+│  设备 Device                │   ① 连接后自动发送注册包（可选）               │
+│   ├─ 从站 Slave (Unit 1)    │   ② 周期发送心跳包（可选）                     │
+│   │    └─ 四类内存区         │   ③ 响应主站的 Modbus 请求（FC 01/02/03/04/05/06/0F/10）
+│   └─ 从站 Slave (Unit 2)    │                                              │
+└─────────────────────────────┘                                              │
+                                                                 按请求中的 Unit ID 路由到对应从站内存区
 ```
 
-## 文档
+## 数据文件
+
+应用数据保存在 `%APPDATA%\com.shulink.iot.monitor\`：
+
+| 文件 / 目录 | 内容 |
+|---|---|
+| `devices\{id}.json` | 每台设备的完整配置（从站、寄存器、连接、注册包、心跳） |
+| `sim_config.json` | 各设备寄存器随机模拟配置 |
+| `config.toml` | 应用与界面设置（语言、主题、排版密度） |
+
+设备配置可通过「设备列表 → 管理 → 导出 / 导入」整树备份为 JSON，实现跨机器迁移。
+
+## 文档（Wiki）
 
 详细使用说明请查看 **[Wiki](https://github.com/jawalkwan/shulink-iot-monitor/wiki)**：
 
-- [安装指南](https://github.com/jawalkwan/shulink-iot-monitor/wiki)
-- [使用手册](https://github.com/jawalkwan/shulink-iot-monitor/wiki)
-- [设备包格式](https://github.com/jawalkwan/shulink-iot-monitor/wiki)
-- [FAQ](https://github.com/jawalkwan/shulink-iot-monitor/wiki)
+- [安装指南](https://github.com/jawalkwan/shulink-iot-monitor/wiki/Installation)
+- [快速上手](https://github.com/jawalkwan/shulink-iot-monitor/wiki/Quick-Start)
+- [设备与从站管理](https://github.com/jawalkwan/shulink-iot-monitor/wiki/Device-and-Slave-Management)
+- [寄存器配置](https://github.com/jawalkwan/shulink-iot-monitor/wiki/Register-Configuration)
+- [注册包与心跳](https://github.com/jawalkwan/shulink-iot-monitor/wiki/Registration-and-Heartbeat)
+- [随机模拟](https://github.com/jawalkwan/shulink-iot-monitor/wiki/Random-Simulation)
+- [运行监控](https://github.com/jawalkwan/shulink-iot-monitor/wiki/Runtime-Monitor)
+- [导入与导出](https://github.com/jawalkwan/shulink-iot-monitor/wiki/Import-and-Export)
+- [设备包格式](https://github.com/jawalkwan/shulink-iot-monitor/wiki/Device-Bundle-Format)
+- [FAQ](https://github.com/jawalkwan/shulink-iot-monitor/wiki/FAQ)
 
 ## 常见问题 (FAQ)
 
-**端口 502 被拒绝访问？**
-Windows 上低于 1024 的端口可能需要管理员权限：以管理员身份运行，或改用其他端口（如 5020）。
+**设备连接不上主站？**
+确认主站 IP / 端口可达（可先用 `telnet <ip> <port>` 验证）；主站侧监听端口需放行防火墙；检查帧格式是否与主站一致（Modbus TCP / RTU over TCP）。
 
-**Windows 防火墙弹窗？**
-服务启动时防火墙可能弹窗提示，请点击「允许访问」，否则上位机无法连入。
+**主站读不到某些高地址？**
+寄存器数组只覆盖实际用到的地址。请在对应内存区使用「预留地址空间」扩容，或在导入的设备包中补上 `space` 字段。详见 [Wiki · 设备包格式](https://github.com/jawalkwan/shulink-iot-monitor/wiki/Device-Bundle-Format)。
+
+**注册包 / 心跳对端收不到？**
+注册包与心跳走同一条连接，需主站按原始字节流读取；确认报文 HEX 内容与数据类型（Hex / String / 整型）选择正确。
 
 **便携版启动无反应？**
 大概率缺少 WebView2 Runtime，安装 [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) 后重试，或改用 setup.exe 安装包。
 
-更多问题见 [Wiki FAQ](https://github.com/jawalkwan/shulink-iot-monitor/wiki)。
+更多问题见 [Wiki · FAQ](https://github.com/jawalkwan/shulink-iot-monitor/wiki/FAQ)。
 
-## License
+## 更新日志
 
-[MIT](LICENSE)
+见 [CHANGELOG.md](CHANGELOG.md)；完整版本与安装包请前往 [Releases](https://github.com/jawalkwan/shulink-iot-monitor/releases) 页面。
+
+## 问题反馈
+
+使用中遇到问题或有功能建议，欢迎提交 [Issue](https://github.com/jawalkwan/shulink-iot-monitor/issues)，请附上：
+
+- 操作系统版本与应用版本号（「关于」页可见）
+- 问题现象与复现步骤
+- 相关通信日志（注意隐去敏感信息）
+
+## 版权说明
+
+**本项目未开源**。本仓库仅用于发布版本说明、使用文档与问题反馈，不包含源码；安装包请通过 [Releases](https://github.com/jawalkwan/shulink-iot-monitor/releases) 页面获取。
+
+未经授权，不得对本软件进行反编译、逆向工程或再分发。
